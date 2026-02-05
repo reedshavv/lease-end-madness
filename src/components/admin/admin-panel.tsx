@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 
 type Tab = 'entrants' | 'results'
 
@@ -62,13 +62,13 @@ export function AdminPanel() {
   )
 }
 
-// --- Entrants Manager ---
+// --- Entrants Manager with Drag & Drop ---
 function EntrantsManager() {
   const [entrants, setEntrants] = useState<Entrant[]>([])
   const [loading, setLoading] = useState(true)
+  const [saving, setSaving] = useState(false)
   const [editingId, setEditingId] = useState<string | null>(null)
   const [editName, setEditName] = useState('')
-  const [editSeed, setEditSeed] = useState(0)
   const [filterRegion, setFilterRegion] = useState<string>('all')
 
   useEffect(() => {
@@ -81,14 +81,13 @@ function EntrantsManager() {
   const startEdit = (e: Entrant) => {
     setEditingId(e.id)
     setEditName(e.displayName)
-    setEditSeed(e.seed)
   }
 
   const saveEdit = async (id: string) => {
     const res = await fetch('/api/admin/entrants', {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ id, displayName: editName, seed: editSeed }),
+      body: JSON.stringify({ id, displayName: editName }),
     })
     if (res.ok) {
       const data = await res.json()
@@ -97,71 +96,217 @@ function EntrantsManager() {
     }
   }
 
+  // Drag & drop reorder within a region
+  const handleReorder = async (region: string, draggedId: string, targetSeed: number) => {
+    setSaving(true)
+    const regionEntrants = entrants
+      .filter(e => e.region === region)
+      .sort((a, b) => a.seed - b.seed)
+
+    const draggedIdx = regionEntrants.findIndex(e => e.id === draggedId)
+    if (draggedIdx === -1) { setSaving(false); return }
+
+    const dragged = regionEntrants[draggedIdx]
+    const targetIdx = targetSeed - 1
+
+    if (draggedIdx === targetIdx) { setSaving(false); return }
+
+    // Remove dragged and insert at target position
+    const reordered = [...regionEntrants]
+    reordered.splice(draggedIdx, 1)
+    reordered.splice(targetIdx, 0, dragged)
+
+    // Assign new seeds 1-16
+    const updates = reordered.map((e, i) => ({ id: e.id, seed: i + 1 }))
+
+    // Optimistic update
+    setEntrants(prev => {
+      const updated = [...prev]
+      for (const u of updates) {
+        const idx = updated.findIndex(e => e.id === u.id)
+        if (idx >= 0) updated[idx] = { ...updated[idx], seed: u.seed }
+      }
+      return updated
+    })
+
+    // Save to backend
+    try {
+      const res = await fetch('/api/admin/entrants', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ reorder: updates }),
+      })
+      if (!res.ok) throw new Error('Save failed')
+    } catch {
+      // Revert on error
+      const data = await fetch('/api/admin/entrants').then(r => r.json())
+      setEntrants(data.entrants)
+    } finally {
+      setSaving(false)
+    }
+  }
+
   if (loading) return <div className="text-center py-8 text-gray-500">Loading entrants...</div>
 
-  const filtered = filterRegion === 'all' ? entrants : entrants.filter(e => e.region === filterRegion)
-  const grouped = filtered.reduce((acc, e) => {
-    if (!acc[e.region]) acc[e.region] = []
-    acc[e.region].push(e)
-    return acc
-  }, {} as Record<string, Entrant[]>)
+  const regions = filterRegion === 'all'
+    ? Object.keys(REGION_LABELS)
+    : [filterRegion]
 
   return (
     <div>
-      <div className="mb-4 flex gap-2">
-        <button onClick={() => setFilterRegion('all')} className={`px-3 py-1 rounded text-sm ${filterRegion === 'all' ? 'bg-gray-800 text-white' : 'bg-white'}`}>All</button>
+      {saving && (
+        <div className="fixed top-4 right-4 bg-blue-600 text-white px-4 py-2 rounded-lg shadow-lg z-50">Saving...</div>
+      )}
+
+      <div className="mb-4 flex gap-2 flex-wrap">
+        <button onClick={() => setFilterRegion('all')} className={`px-3 py-1 rounded text-sm ${filterRegion === 'all' ? 'bg-gray-800 text-white' : 'bg-white'}`}>All Regions</button>
         {Object.entries(REGION_LABELS).map(([k, v]) => (
           <button key={k} onClick={() => setFilterRegion(k)} className={`px-3 py-1 rounded text-sm ${filterRegion === k ? 'bg-gray-800 text-white' : 'bg-white'}`}>{v}</button>
         ))}
       </div>
 
-      {Object.entries(grouped).map(([region, regionEntrants]) => (
-        <div key={region} className="mb-6">
-          <h4 className="font-bold text-lg mb-2">{REGION_LABELS[region] || region}</h4>
-          <div className="bg-white rounded-lg shadow overflow-hidden">
-            <table className="w-full text-sm">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th className="px-4 py-2 text-left">Seed</th>
-                  <th className="px-4 py-2 text-left">Name</th>
-                  <th className="px-4 py-2 text-left">Title</th>
-                  <th className="px-4 py-2 text-right">Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {regionEntrants.sort((a, b) => a.seed - b.seed).map(entrant => (
-                  <tr key={entrant.id} className="border-t">
-                    {editingId === entrant.id ? (
-                      <>
-                        <td className="px-4 py-2">
-                          <input type="number" value={editSeed} onChange={e => setEditSeed(+e.target.value)} className="w-16 border rounded px-2 py-1 text-gray-900" />
-                        </td>
-                        <td className="px-4 py-2">
-                          <input value={editName} onChange={e => setEditName(e.target.value)} className="border rounded px-2 py-1 w-full text-gray-900" />
-                        </td>
-                        <td className="px-4 py-2 text-gray-500">{entrant.title || '-'}</td>
-                        <td className="px-4 py-2 text-right space-x-2">
-                          <button onClick={() => saveEdit(entrant.id)} className="bg-green-600 text-white px-3 py-1 rounded text-xs">Save</button>
-                          <button onClick={() => setEditingId(null)} className="bg-gray-400 text-white px-3 py-1 rounded text-xs">Cancel</button>
-                        </td>
-                      </>
-                    ) : (
-                      <>
-                        <td className="px-4 py-2 font-bold">{entrant.seed}</td>
-                        <td className="px-4 py-2">{entrant.displayName}</td>
-                        <td className="px-4 py-2 text-gray-500">{entrant.title || '-'}</td>
-                        <td className="px-4 py-2 text-right">
-                          <button onClick={() => startEdit(entrant)} className="bg-blue-600 text-white px-3 py-1 rounded text-xs">Edit</button>
-                        </td>
-                      </>
-                    )}
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+      <p className="text-sm text-gray-500 mb-4">💡 Drag and drop entrants to reorder their seed within a region. Click the name to edit it.</p>
+
+      {regions.map(region => {
+        const regionEntrants = entrants
+          .filter(e => e.region === region)
+          .sort((a, b) => a.seed - b.seed)
+
+        return (
+          <div key={region} className="mb-6">
+            <h4 className="font-bold text-lg mb-2">{REGION_LABELS[region]}</h4>
+            <DraggableList
+              entrants={regionEntrants}
+              region={region}
+              editingId={editingId}
+              editName={editName}
+              setEditName={setEditName}
+              onStartEdit={startEdit}
+              onSaveEdit={saveEdit}
+              onCancelEdit={() => setEditingId(null)}
+              onReorder={handleReorder}
+            />
           </div>
-        </div>
-      ))}
+        )
+      })}
+    </div>
+  )
+}
+
+// --- Draggable List ---
+function DraggableList({
+  entrants,
+  region,
+  editingId,
+  editName,
+  setEditName,
+  onStartEdit,
+  onSaveEdit,
+  onCancelEdit,
+  onReorder,
+}: {
+  entrants: Entrant[]
+  region: string
+  editingId: string | null
+  editName: string
+  setEditName: (n: string) => void
+  onStartEdit: (e: Entrant) => void
+  onSaveEdit: (id: string) => void
+  onCancelEdit: () => void
+  onReorder: (region: string, draggedId: string, targetSeed: number) => void
+}) {
+  const [draggedId, setDraggedId] = useState<string | null>(null)
+  const [dragOverSeed, setDragOverSeed] = useState<number | null>(null)
+
+  const handleDragStart = (e: React.DragEvent, id: string) => {
+    setDraggedId(id)
+    e.dataTransfer.effectAllowed = 'move'
+    e.dataTransfer.setData('text/plain', id)
+  }
+
+  const handleDragOver = (e: React.DragEvent, seed: number) => {
+    e.preventDefault()
+    e.dataTransfer.dropEffect = 'move'
+    setDragOverSeed(seed)
+  }
+
+  const handleDragLeave = () => {
+    setDragOverSeed(null)
+  }
+
+  const handleDrop = (e: React.DragEvent, targetSeed: number) => {
+    e.preventDefault()
+    const id = e.dataTransfer.getData('text/plain')
+    if (id) {
+      onReorder(region, id, targetSeed)
+    }
+    setDraggedId(null)
+    setDragOverSeed(null)
+  }
+
+  const handleDragEnd = () => {
+    setDraggedId(null)
+    setDragOverSeed(null)
+  }
+
+  return (
+    <div className="bg-white rounded-lg shadow overflow-hidden">
+      {entrants.map(entrant => {
+        const isDragging = draggedId === entrant.id
+        const isDragOver = dragOverSeed === entrant.seed
+        const isEditing = editingId === entrant.id
+
+        return (
+          <div
+            key={entrant.id}
+            draggable={!isEditing}
+            onDragStart={(e) => handleDragStart(e, entrant.id)}
+            onDragOver={(e) => handleDragOver(e, entrant.seed)}
+            onDragLeave={handleDragLeave}
+            onDrop={(e) => handleDrop(e, entrant.seed)}
+            onDragEnd={handleDragEnd}
+            className={`
+              flex items-center gap-3 px-4 py-3 border-b border-gray-100 transition-all
+              ${isDragging ? 'opacity-40 bg-gray-100' : ''}
+              ${isDragOver && !isDragging ? 'border-t-2 border-t-blue-500 bg-blue-50' : ''}
+              ${!isEditing ? 'cursor-grab active:cursor-grabbing' : ''}
+            `}
+          >
+            {/* Drag handle */}
+            <div className="text-gray-300 select-none shrink-0">⠿</div>
+
+            {/* Seed badge */}
+            <div className="bg-gray-800 text-white w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold shrink-0">
+              {entrant.seed}
+            </div>
+
+            {/* Name */}
+            {isEditing ? (
+              <div className="flex-1 flex items-center gap-2">
+                <input
+                  value={editName}
+                  onChange={e => setEditName(e.target.value)}
+                  onKeyDown={e => e.key === 'Enter' && onSaveEdit(entrant.id)}
+                  className="border rounded px-2 py-1 flex-1 text-gray-900"
+                  autoFocus
+                />
+                <button onClick={() => onSaveEdit(entrant.id)} className="bg-green-600 text-white px-3 py-1 rounded text-xs">Save</button>
+                <button onClick={onCancelEdit} className="bg-gray-400 text-white px-3 py-1 rounded text-xs">Cancel</button>
+              </div>
+            ) : (
+              <div className="flex-1 flex items-center justify-between">
+                <span className="font-medium text-gray-900">{entrant.displayName}</span>
+                <button
+                  onClick={(e) => { e.stopPropagation(); onStartEdit(entrant) }}
+                  className="text-blue-600 hover:text-blue-800 text-xs font-medium px-2 py-1 rounded hover:bg-blue-50"
+                >
+                  ✏️ Edit
+                </button>
+              </div>
+            )}
+          </div>
+        )
+      })}
     </div>
   )
 }
@@ -190,7 +335,6 @@ function ResultsManager() {
     })
 
     if (res.ok) {
-      // Refresh
       const data = await fetch(`/api/admin/results?round=${selectedRound}`).then(r => r.json())
       setMatches(data.matches)
     }
