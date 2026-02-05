@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { signIn } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
+import { Logo } from '@/components/ui/logo'
 
 export default function SignInPage() {
   const [email, setEmail] = useState('')
@@ -80,15 +81,9 @@ export default function SignInPage() {
   return (
     <div className="min-h-screen bg-navy-50 dark:bg-navy-950 flex items-center justify-center p-4">
       <div className="w-full max-w-md">
-        {/* Navy Hero Card - like leaseend.com style */}
-        <div className="hero-card mb-6 text-center">
-          <div className="flex items-center justify-center space-x-1 mb-3">
-            <span className="text-3xl font-light tracking-tight">LEASE</span>
-            <span className="text-3xl font-bold text-gold-400 tracking-tight">END</span>
-          </div>
-          <div className="inline-flex items-center bg-gold-400 text-navy-900 px-4 py-1.5 rounded-full font-bold text-lg mb-3">
-            🏀 MADNESS
-          </div>
+        {/* Navy Hero Card */}
+        <div className="hero-card mb-6 text-center flex flex-col items-center">
+          <Logo size="lg" showMadness className="mb-4 justify-center" />
           <p className="text-navy-200">
             {isRegistering
               ? 'Join 300+ coworkers competing for the perfect bracket!'

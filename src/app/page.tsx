@@ -5,6 +5,7 @@ import { prisma } from '@/lib/prisma'
 import { BracketView } from '@/components/bracket/bracket-view'
 import { Navbar } from '@/components/layout/navbar'
 import { isLocked, getLockCountdown } from '@/lib/bracket-utils'
+import Image from 'next/image'
 
 export default async function HomePage() {
   const session = await getServerSession(authOptions)
@@ -32,13 +33,18 @@ export default async function HomePage() {
       
       <main className="container mx-auto px-4 py-8">
         {/* Hero Header */}
-        <div className="hero-card text-center mb-8">
-          <div className="flex items-center justify-center space-x-2 mb-2">
-            <span className="text-4xl md:text-5xl font-light tracking-tight">LEASE</span>
-            <span className="text-4xl md:text-5xl font-bold text-gold-400 tracking-tight">END</span>
-          </div>
-          <div className="inline-flex items-center bg-gold-400 text-navy-900 px-6 py-2 rounded-full font-bold text-xl mb-4">
-            🏀 MADNESS 2026 🏀
+        <div className="hero-card text-center mb-8 flex flex-col items-center">
+          <div className="flex items-center gap-4 mb-4">
+            <Image 
+              src="/leaseend-logo.webp" 
+              alt="Lease End" 
+              width={240} 
+              height={55}
+              className="h-14 w-auto"
+            />
+            <span className="bg-gold-400 text-navy-900 px-4 py-2 rounded-lg font-bold text-xl">
+              🏀 MADNESS
+            </span>
           </div>
           <p className="text-navy-200 text-lg mb-4">
             Own Your Picks • $1,000,000 Perfect Bracket Prize

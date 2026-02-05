@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import Image from 'next/image'
 import { getCurrentTournamentRound, getRoundDisplayName } from '@/lib/bracket-utils'
 
 interface LeaderboardEntry {
@@ -74,10 +75,13 @@ export default function TVDisplayPage() {
     return (
       <div className="h-screen bg-navy-950 flex items-center justify-center">
         <div className="text-center">
-          <div className="flex items-center justify-center space-x-3 mb-4">
-            <span className="text-5xl font-light text-white tracking-tight">LEASE</span>
-            <span className="text-5xl font-bold text-gold-400 tracking-tight">END</span>
-          </div>
+          <Image 
+            src="/leaseend-logo.webp" 
+            alt="Lease End" 
+            width={280} 
+            height={64}
+            className="h-16 w-auto mx-auto mb-4"
+          />
           <div className="text-navy-400 text-2xl">Loading Madness...</div>
         </div>
       </div>
@@ -90,10 +94,13 @@ export default function TVDisplayPage() {
       <div className="bg-navy-900 border-b border-navy-800 p-6">
         <div className="flex justify-between items-center">
           <div className="flex items-center space-x-4">
-            <div className="flex items-center space-x-2">
-              <span className="text-4xl font-light text-white tracking-tight">LEASE</span>
-              <span className="text-4xl font-bold text-gold-400 tracking-tight">END</span>
-            </div>
+            <Image 
+              src="/leaseend-logo.webp" 
+              alt="Lease End" 
+              width={180} 
+              height={42}
+              className="h-10 w-auto"
+            />
             <div className="bg-gold-400 text-navy-900 px-4 py-1.5 rounded-full font-bold text-lg">
               🏀 MADNESS 2026
             </div>
