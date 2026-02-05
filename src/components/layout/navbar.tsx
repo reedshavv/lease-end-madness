@@ -2,13 +2,12 @@
 
 import { signOut } from 'next-auth/react'
 import Link from 'next/link'
-import { UserRole } from '@prisma/client'
 
 interface User {
   id: string
   name: string
   email: string
-  role: UserRole
+  role: string
 }
 
 interface NavbarProps {
