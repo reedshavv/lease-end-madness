@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { getCurrentTournamentRound, getRoundDisplayName, formatLockTime } from '@/lib/bracket-utils'
+import { getCurrentTournamentRound, getRoundDisplayName } from '@/lib/bracket-utils'
 
 interface LeaderboardEntry {
   id: string
@@ -30,13 +30,7 @@ export default function TVDisplayPage() {
 
   useEffect(() => {
     fetchTVData()
-    
-    // Auto refresh every 30 seconds
-    const interval = setInterval(() => {
-      fetchTVData()
-    }, 30000)
-
-    // Rotate views every 15 seconds
+    const interval = setInterval(fetchTVData, 30000)
     const viewRotation = setInterval(() => {
       setCurrentView(prev => {
         switch (prev) {
@@ -78,61 +72,58 @@ export default function TVDisplayPage() {
 
   if (loading) {
     return (
-      <div className="h-screen bg-gradient-to-br from-indigo-900 to-purple-900 flex items-center justify-center">
-        <div className="text-white text-4xl">Loading Lease End Madness...</div>
+      <div className="h-screen bg-navy-950 flex items-center justify-center">
+        <div className="text-center">
+          <div className="flex items-center justify-center space-x-3 mb-4">
+            <span className="text-5xl font-light text-white tracking-tight">LEASE</span>
+            <span className="text-5xl font-bold text-gold-400 tracking-tight">END</span>
+          </div>
+          <div className="text-navy-400 text-2xl">Loading Madness...</div>
+        </div>
       </div>
     )
   }
 
   return (
-    <div className="h-screen bg-gradient-to-br from-indigo-900 to-purple-900 text-white overflow-hidden">
+    <div className="h-screen bg-navy-950 text-white overflow-hidden">
       {/* Header */}
-      <div className="bg-black bg-opacity-20 p-6">
+      <div className="bg-navy-900 border-b border-navy-800 p-6">
         <div className="flex justify-between items-center">
           <div className="flex items-center space-x-4">
-            <div className="text-4xl">🏀</div>
-            <div>
-              <h1 className="text-4xl font-bold">Lease End Madness</h1>
-              <p className="text-xl text-blue-200">Live Tournament Results</p>
+            <div className="flex items-center space-x-2">
+              <span className="text-4xl font-light text-white tracking-tight">LEASE</span>
+              <span className="text-4xl font-bold text-gold-400 tracking-tight">END</span>
+            </div>
+            <div className="bg-gold-400 text-navy-900 px-4 py-1.5 rounded-full font-bold text-lg">
+              🏀 MADNESS 2026
             </div>
           </div>
           
           <div className="text-right">
-            <div className="text-2xl font-bold">{currentRound}</div>
-            <div className="text-lg text-blue-200">
-              🎯 Perfect Brackets: {perfectBrackets}
+            <div className="text-2xl font-bold text-gold-400">{currentRound}</div>
+            <div className="text-lg text-navy-300">
+              🎯 Perfect Brackets: <span className="text-gold-400 font-bold">{perfectBrackets}</span>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Main Content Area */}
-      <div className="h-[calc(100vh-120px)] p-6">
-        {currentView === 'leaderboard' && (
-          <LeaderboardView leaderboard={leaderboard} />
-        )}
-        
-        {currentView === 'regions' && (
-          <RegionsView />
-        )}
-        
-        {currentView === 'perfect' && (
-          <PerfectBracketsView leaderboard={leaderboard} />
-        )}
-        
-        {currentView === 'results' && (
-          <ResultsView results={recentResults} />
-        )}
+      {/* Main Content */}
+      <div className="h-[calc(100vh-180px)] p-6">
+        {currentView === 'leaderboard' && <LeaderboardView leaderboard={leaderboard} />}
+        {currentView === 'regions' && <RegionsView />}
+        {currentView === 'perfect' && <PerfectBracketsView leaderboard={leaderboard} />}
+        {currentView === 'results' && <ResultsView results={recentResults} />}
       </div>
 
       {/* Footer */}
-      <div className="bg-black bg-opacity-20 p-4">
+      <div className="bg-navy-900 border-t border-navy-800 p-4">
         <div className="flex justify-between items-center text-lg">
           <div className="flex items-center space-x-8">
-            <div>💰 Perfect Bracket Prize: $1,000,000</div>
-            <div>📊 {lockInfo}</div>
+            <div className="text-gold-400 font-semibold">💰 $1,000,000 Perfect Bracket Prize</div>
+            <div className="text-navy-400">📊 {lockInfo}</div>
           </div>
-          <div className="text-blue-200">
+          <div className="text-navy-400">
             Auto-refreshing • {new Date().toLocaleTimeString()}
           </div>
         </div>
@@ -144,9 +135,11 @@ export default function TVDisplayPage() {
 function LeaderboardView({ leaderboard }: { leaderboard: LeaderboardEntry[] }) {
   return (
     <div className="h-full">
-      <h2 className="text-3xl font-bold mb-6 text-center">🏆 TOP 10 LEADERBOARD</h2>
-      <div className="bg-white bg-opacity-10 rounded-lg p-6 h-[calc(100%-80px)]">
-        <div className="grid grid-cols-5 gap-4 text-xl font-semibold mb-4 pb-4 border-b border-white border-opacity-20">
+      <h2 className="text-3xl font-bold mb-6 text-center">
+        <span className="bg-gold-400 text-navy-900 px-6 py-2 rounded-full">🏆 TOP 10 LEADERBOARD</span>
+      </h2>
+      <div className="bg-navy-900 rounded-xl border border-navy-800 p-6 h-[calc(100%-80px)]">
+        <div className="grid grid-cols-5 gap-4 text-xl font-semibold mb-4 pb-4 border-b border-navy-700 text-navy-400">
           <div>Rank</div>
           <div>Player</div>
           <div>Points</div>
@@ -154,22 +147,26 @@ function LeaderboardView({ leaderboard }: { leaderboard: LeaderboardEntry[] }) {
           <div>Status</div>
         </div>
         
-        <div className="space-y-3 overflow-auto h-full">
-          {leaderboard.slice(0, 10).map((entry) => (
-            <div key={entry.id} className="grid grid-cols-5 gap-4 text-lg py-2 hover:bg-white hover:bg-opacity-5 rounded">
-              <div className="font-bold text-yellow-400">#{entry.rank}</div>
-              <div className="truncate">{entry.name}</div>
-              <div className="font-semibold">{entry.totalPoints}</div>
-              <div className="text-blue-200">+{entry.possibleRemainingPoints}</div>
+        <div className="space-y-3 overflow-auto h-[calc(100%-60px)]">
+          {leaderboard.length > 0 ? leaderboard.slice(0, 10).map((entry) => (
+            <div key={entry.id} className="grid grid-cols-5 gap-4 text-lg py-3 px-2 hover:bg-navy-800 rounded-lg transition-colors">
+              <div className="font-bold text-gold-400">#{entry.rank}</div>
+              <div className="truncate text-white">{entry.name}</div>
+              <div className="font-semibold text-white">{entry.totalPoints}</div>
+              <div className="text-teal-400">+{entry.possibleRemainingPoints}</div>
               <div>
                 {entry.isPerfect ? (
-                  <span className="text-green-400 font-bold">🔥 PERFECT</span>
+                  <span className="badge badge-success">🔥 PERFECT</span>
                 ) : (
-                  <span className="text-gray-300">Active</span>
+                  <span className="text-navy-400">Active</span>
                 )}
               </div>
             </div>
-          ))}
+          )) : (
+            <div className="text-center text-navy-500 py-8 text-xl">
+              No brackets submitted yet. The madness begins soon!
+            </div>
+          )}
         </div>
       </div>
     </div>
@@ -178,22 +175,24 @@ function LeaderboardView({ leaderboard }: { leaderboard: LeaderboardEntry[] }) {
 
 function RegionsView() {
   const regions = [
-    { name: 'iAdvisors', color: 'from-blue-500 to-blue-700' },
-    { name: 'xAdvisors', color: 'from-green-500 to-green-700' },
-    { name: 'Financial Specialists', color: 'from-purple-500 to-purple-700' },
-    { name: 'wAdvisors', color: 'from-red-500 to-red-700' }
+    { name: 'iAdvisors', color: 'from-blue-600 to-blue-800', border: 'border-l-blue-500' },
+    { name: 'xAdvisors', color: 'from-emerald-600 to-emerald-800', border: 'border-l-emerald-500' },
+    { name: 'Financial Specialists', color: 'from-purple-600 to-purple-800', border: 'border-l-purple-500' },
+    { name: 'wAdvisors', color: 'from-rose-600 to-rose-800', border: 'border-l-rose-500' }
   ]
 
   return (
     <div className="h-full">
-      <h2 className="text-3xl font-bold mb-6 text-center">🎯 REGION STATUS</h2>
+      <h2 className="text-3xl font-bold mb-6 text-center">
+        <span className="bg-gold-400 text-navy-900 px-6 py-2 rounded-full">🎯 REGION STATUS</span>
+      </h2>
       <div className="grid grid-cols-2 gap-6 h-[calc(100%-80px)]">
         {regions.map((region) => (
-          <div key={region.name} className={`bg-gradient-to-br ${region.color} rounded-lg p-6 text-center`}>
+          <div key={region.name} className={`bg-gradient-to-br ${region.color} rounded-xl p-6 text-center border-l-4 ${region.border}`}>
             <h3 className="text-2xl font-bold mb-4">{region.name}</h3>
-            <div className="text-lg">
-              <div className="mb-2">🏀 Teams Remaining: TBD</div>
-              <div className="mb-2">🔥 Upsets: TBD</div>
+            <div className="text-lg space-y-2">
+              <div>🏀 Teams Remaining: TBD</div>
+              <div>🔥 Upsets: TBD</div>
               <div>⭐ Cinderella: TBD</div>
             </div>
           </div>
@@ -208,25 +207,27 @@ function PerfectBracketsView({ leaderboard }: { leaderboard: LeaderboardEntry[] 
 
   return (
     <div className="h-full">
-      <h2 className="text-3xl font-bold mb-6 text-center">🔥 PERFECT BRACKET WATCH</h2>
-      <div className="bg-gradient-to-br from-green-600 to-green-800 rounded-lg p-6 text-center h-[calc(100%-80px)]">
-        <div className="text-6xl font-bold mb-6">{perfectEntries.length}</div>
-        <div className="text-2xl mb-8">Perfect Brackets Remaining</div>
+      <h2 className="text-3xl font-bold mb-6 text-center">
+        <span className="bg-gold-400 text-navy-900 px-6 py-2 rounded-full">🔥 PERFECT BRACKET WATCH</span>
+      </h2>
+      <div className="bg-gradient-to-br from-emerald-700 to-emerald-900 rounded-xl p-8 text-center h-[calc(100%-80px)] border border-emerald-600">
+        <div className="text-7xl font-bold mb-4 text-gold-400">{perfectEntries.length}</div>
+        <div className="text-2xl mb-8 text-emerald-100">Perfect Brackets Remaining</div>
         
         {perfectEntries.length > 0 ? (
           <div className="space-y-4">
-            <div className="text-xl font-semibold mb-4">Still in the Hunt:</div>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="text-xl font-semibold mb-4 text-emerald-200">Still in the Hunt:</div>
+            <div className="grid grid-cols-2 gap-4 max-w-2xl mx-auto">
               {perfectEntries.map((entry) => (
-                <div key={entry.id} className="bg-white bg-opacity-20 rounded-lg p-4">
-                  <div className="font-bold text-lg">{entry.name}</div>
-                  <div className="text-sm">Points: {entry.totalPoints}</div>
+                <div key={entry.id} className="bg-black bg-opacity-30 rounded-xl p-4 border border-emerald-500">
+                  <div className="font-bold text-lg text-white">{entry.name}</div>
+                  <div className="text-sm text-emerald-300">Points: {entry.totalPoints}</div>
                 </div>
               ))}
             </div>
           </div>
         ) : (
-          <div className="text-xl text-green-200">
+          <div className="text-xl text-emerald-200">
             No perfect brackets remaining.<br/>
             The hunt for $1,000,000 continues next year!
           </div>
@@ -239,18 +240,20 @@ function PerfectBracketsView({ leaderboard }: { leaderboard: LeaderboardEntry[] 
 function ResultsView({ results }: { results: RecentResult[] }) {
   return (
     <div className="h-full">
-      <h2 className="text-3xl font-bold mb-6 text-center">🚨 RECENT RESULTS</h2>
-      <div className="bg-white bg-opacity-10 rounded-lg p-6 h-[calc(100%-80px)]">
+      <h2 className="text-3xl font-bold mb-6 text-center">
+        <span className="bg-gold-400 text-navy-900 px-6 py-2 rounded-full">🚨 RECENT RESULTS</span>
+      </h2>
+      <div className="bg-navy-900 rounded-xl border border-navy-800 p-6 h-[calc(100%-80px)]">
         {results.length > 0 ? (
           <div className="space-y-4 overflow-auto h-full">
             {results.slice(0, 8).map((result) => (
-              <div key={result.id} className="bg-white bg-opacity-10 rounded-lg p-4">
+              <div key={result.id} className="bg-navy-800 rounded-xl p-4 border-l-4 border-l-gold-400">
                 <div className="flex justify-between items-center">
                   <div>
-                    <div className="font-semibold text-lg">{result.matchDescription}</div>
-                    <div className="text-green-400 font-bold">Winner: {result.winner}</div>
+                    <div className="font-semibold text-lg text-white">{result.matchDescription}</div>
+                    <div className="text-emerald-400 font-bold">Winner: {result.winner}</div>
                   </div>
-                  <div className="text-sm text-blue-200">
+                  <div className="text-sm text-navy-400">
                     {new Date(result.timestamp).toLocaleTimeString()}
                   </div>
                 </div>
@@ -258,7 +261,7 @@ function ResultsView({ results }: { results: RecentResult[] }) {
             ))}
           </div>
         ) : (
-          <div className="text-center text-xl text-gray-300 flex items-center justify-center h-full">
+          <div className="text-center text-xl text-navy-500 flex items-center justify-center h-full">
             No recent results available
           </div>
         )}

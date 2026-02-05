@@ -4,7 +4,7 @@ import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { BracketView } from '@/components/bracket/bracket-view'
 import { Navbar } from '@/components/layout/navbar'
-import { isLocked } from '@/lib/bracket-utils'
+import { isLocked, formatLockTime, getLockCountdown } from '@/lib/bracket-utils'
 
 export default async function HomePage() {
   const session = await getServerSession(authOptions)
@@ -13,42 +13,49 @@ export default async function HomePage() {
     redirect('/auth/signin')
   }
 
-  // Get settings to check lock status
   const settings = await prisma.settings.findFirst()
   const locked = isLocked(settings?.lockDatetime)
 
-  // Get or create user's bracket
   let bracket = await prisma.bracket.findFirst({
     where: { userId: session.user.id }
   })
 
   if (!bracket) {
     bracket = await prisma.bracket.create({
-      data: {
-        userId: session.user.id
-      }
+      data: { userId: session.user.id }
     })
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
+    <div className="min-h-screen bg-[hsl(var(--background))]">
       <Navbar user={session.user} />
       
       <main className="container mx-auto px-4 py-8">
+        {/* Header */}
         <div className="text-center mb-8">
-          <h1 className="text-4xl md:text-6xl font-bold text-gray-900 mb-4">
-            🏀 Lease End Madness
-          </h1>
-          <p className="text-xl text-gray-600 mb-2">
+          <div className="flex items-center justify-center space-x-2 mb-2">
+            <span className="text-4xl md:text-5xl font-light text-navy-900 dark:text-white tracking-tight">LEASE</span>
+            <span className="text-4xl md:text-5xl font-bold text-gold-500 tracking-tight">END</span>
+          </div>
+          <div className="inline-flex items-center bg-gold-400 text-navy-900 px-6 py-2 rounded-full font-bold text-xl mb-4">
+            🏀 MADNESS 2026 🏀
+          </div>
+          <p className="text-navy-600 dark:text-navy-300 text-lg">
             Own Your Picks • $1,000,000 Perfect Bracket Prize
           </p>
+          
+          {/* Lock Status */}
           {settings?.lockDatetime && (
-            <div className={`inline-flex items-center px-4 py-2 rounded-lg ${
+            <div className={`inline-flex items-center mt-4 px-6 py-3 rounded-xl font-semibold ${
               locked 
-                ? 'bg-red-100 text-red-800' 
-                : 'bg-yellow-100 text-yellow-800'
+                ? 'bg-rose-100 dark:bg-rose-900/30 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-800' 
+                : 'bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-800'
             }`}>
-              {locked ? '🔒 Bracket Locked' : '⏰ Lock Countdown Active'}
+              {locked ? (
+                <span>🔒 Brackets Locked</span>
+              ) : (
+                <span>⏰ Locks: {getLockCountdown(settings.lockDatetime)}</span>
+              )}
             </div>
           )}
         </div>

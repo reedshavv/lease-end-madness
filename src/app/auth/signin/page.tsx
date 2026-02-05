@@ -56,7 +56,6 @@ export default function SignInPage() {
       if (!res.ok) {
         setMessage(data.error || 'Registration failed')
       } else {
-        // Auto sign in after registration
         const result = await signIn('credentials', {
           email,
           password,
@@ -79,18 +78,28 @@ export default function SignInPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4">
-      <div className="bg-white rounded-lg shadow-xl p-8 w-full max-w-md">
+    <div className="min-h-screen bg-navy-900 dark:bg-navy-950 flex items-center justify-center p-4">
+      {/* Background pattern */}
+      <div className="absolute inset-0 opacity-5">
+        <div className="absolute inset-0" style={{
+          backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='1'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`,
+        }} />
+      </div>
+
+      <div className="card p-8 w-full max-w-md relative z-10 bg-white dark:bg-navy-800 border-0">
         {/* Header */}
         <div className="text-center mb-8">
-          <div className="text-4xl mb-4">🏀</div>
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">
-            Lease End Madness
-          </h1>
-          <p className="text-gray-600">
+          <div className="flex items-center justify-center space-x-2 mb-4">
+            <span className="text-3xl font-light text-navy-900 dark:text-white tracking-tight">LEASE</span>
+            <span className="text-3xl font-bold text-gold-500 tracking-tight">END</span>
+          </div>
+          <div className="inline-flex items-center bg-gold-400 text-navy-900 px-4 py-1.5 rounded-full font-bold text-lg">
+            🏀 MADNESS 🏀
+          </div>
+          <p className="text-navy-600 dark:text-navy-300 mt-4">
             {isRegistering
               ? 'Create an account to make your picks!'
-              : 'Sign in to make your picks and compete for the perfect bracket prize!'}
+              : 'Sign in to compete for the perfect bracket!'}
           </p>
         </div>
 
@@ -98,7 +107,7 @@ export default function SignInPage() {
         <form onSubmit={isRegistering ? handleRegister : handleSignIn} className="space-y-4">
           {isRegistering && (
             <div>
-              <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">
+              <label htmlFor="name" className="block text-sm font-medium text-navy-700 dark:text-navy-200 mb-1">
                 Full Name
               </label>
               <input
@@ -108,13 +117,13 @@ export default function SignInPage() {
                 onChange={(e) => setName(e.target.value)}
                 required
                 placeholder="John Doe"
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-gray-900"
+                className="input"
               />
             </div>
           )}
 
           <div>
-            <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
+            <label htmlFor="email" className="block text-sm font-medium text-navy-700 dark:text-navy-200 mb-1">
               Company Email
             </label>
             <input
@@ -124,12 +133,12 @@ export default function SignInPage() {
               onChange={(e) => setEmail(e.target.value)}
               required
               placeholder="your.name@leaseend.com"
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-gray-900"
+              className="input"
             />
           </div>
 
           <div>
-            <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">
+            <label htmlFor="password" className="block text-sm font-medium text-navy-700 dark:text-navy-200 mb-1">
               Password
             </label>
             <input
@@ -140,14 +149,14 @@ export default function SignInPage() {
               required
               placeholder="••••••••"
               minLength={6}
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-gray-900"
+              className="input"
             />
           </div>
 
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-indigo-600 hover:bg-indigo-700 disabled:bg-indigo-400 text-white font-semibold py-3 px-4 rounded-lg transition duration-200"
+            className="btn-primary w-full disabled:opacity-50"
           >
             {loading
               ? 'Please wait...'
@@ -164,7 +173,7 @@ export default function SignInPage() {
               setIsRegistering(!isRegistering)
               setMessage('')
             }}
-            className="text-indigo-600 hover:text-indigo-800 text-sm font-medium"
+            className="text-gold-600 dark:text-gold-400 hover:text-gold-500 text-sm font-medium"
           >
             {isRegistering
               ? 'Already have an account? Sign In'
@@ -176,8 +185,8 @@ export default function SignInPage() {
         {message && (
           <div className={`mt-4 p-3 rounded-lg text-sm ${
             message.includes('success') || message.includes('created')
-              ? 'bg-green-50 text-green-700 border border-green-200'
-              : 'bg-red-50 text-red-700 border border-red-200'
+              ? 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800'
+              : 'bg-rose-100 dark:bg-rose-900/30 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-800'
           }`}>
             {message}
           </div>
@@ -185,15 +194,15 @@ export default function SignInPage() {
 
         {/* Footer */}
         <div className="mt-8 text-center">
-          <div className="text-sm text-gray-500">
-            <p className="mb-2">🏆 $1,000,000 Perfect Bracket Prize</p>
-            <p>Only @leaseend.com email addresses are allowed</p>
+          <div className="text-sm text-navy-500 dark:text-navy-400">
+            <p className="mb-2 font-semibold text-gold-600 dark:text-gold-400">🏆 $1,000,000 Perfect Bracket Prize</p>
+            <p>Only @leaseend.com emails allowed</p>
           </div>
           
-          <div className="mt-4 pt-4 border-t border-gray-200">
+          <div className="mt-4 pt-4 border-t border-navy-200 dark:border-navy-700">
             <Link 
               href="/tv" 
-              className="text-indigo-600 hover:text-indigo-800 text-sm"
+              className="text-gold-600 dark:text-gold-400 hover:text-gold-500 text-sm font-medium"
             >
               View TV Display →
             </Link>

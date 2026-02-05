@@ -10,12 +10,18 @@ export default async function AdminPage() {
   if (session.user.role !== 'ADMIN') redirect('/')
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-red-50 to-red-100">
+    <div className="min-h-screen bg-[hsl(var(--background))]">
       <Navbar user={session.user} />
       <main className="container mx-auto px-4 py-8">
         <div className="text-center mb-8">
-          <h1 className="text-4xl font-bold text-gray-900 mb-2">👑 Admin Dashboard</h1>
-          <p className="text-gray-600">Manage entrants, enter results, and configure the tournament</p>
+          <div className="flex items-center justify-center space-x-2 mb-2">
+            <span className="text-3xl font-light text-navy-900 dark:text-white tracking-tight">LEASE</span>
+            <span className="text-3xl font-bold text-gold-500 tracking-tight">END</span>
+          </div>
+          <div className="inline-flex items-center bg-navy-800 dark:bg-navy-700 text-white px-4 py-1.5 rounded-full font-bold text-sm mb-2">
+            ⚙️ ADMIN DASHBOARD
+          </div>
+          <p className="text-navy-600 dark:text-navy-400">Manage entrants, enter results, and configure the tournament</p>
         </div>
         <AdminPanel />
       </main>

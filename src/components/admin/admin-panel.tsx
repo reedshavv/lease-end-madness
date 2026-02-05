@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useRef, useCallback } from 'react'
+import { useState, useEffect } from 'react'
 
 type Tab = 'entrants' | 'results'
 
@@ -30,6 +30,13 @@ const REGION_LABELS: Record<string, string> = {
   WADVISORS: 'wAdvisors',
 }
 
+const REGION_COLORS: Record<string, string> = {
+  IADVISORS: 'border-l-blue-500',
+  XADVISORS: 'border-l-emerald-500',
+  FINANCIAL_SPECIALISTS: 'border-l-purple-500',
+  WADVISORS: 'border-l-rose-500',
+}
+
 const ROUNDS = ['R64', 'R32', 'S16', 'E8', 'F4', 'CHAMP']
 const ROUND_LABELS: Record<string, string> = {
   R64: 'Round of 64', R32: 'Round of 32', S16: 'Sweet 16',
@@ -41,16 +48,25 @@ export function AdminPanel() {
 
   return (
     <div>
+      {/* Tab buttons */}
       <div className="flex gap-2 mb-6">
         <button
           onClick={() => setTab('entrants')}
-          className={`px-6 py-2 rounded-lg font-semibold ${tab === 'entrants' ? 'bg-blue-600 text-white' : 'bg-white text-gray-700 hover:bg-gray-100'}`}
+          className={`px-6 py-3 rounded-xl font-semibold transition-all ${
+            tab === 'entrants' 
+              ? 'bg-gold-400 text-navy-900 shadow-md' 
+              : 'bg-white dark:bg-navy-800 text-navy-700 dark:text-navy-200 hover:bg-navy-100 dark:hover:bg-navy-700 border border-navy-200 dark:border-navy-700'
+          }`}
         >
           👥 Manage Entrants
         </button>
         <button
           onClick={() => setTab('results')}
-          className={`px-6 py-2 rounded-lg font-semibold ${tab === 'results' ? 'bg-green-600 text-white' : 'bg-white text-gray-700 hover:bg-gray-100'}`}
+          className={`px-6 py-3 rounded-xl font-semibold transition-all ${
+            tab === 'results' 
+              ? 'bg-emerald-500 text-white shadow-md' 
+              : 'bg-white dark:bg-navy-800 text-navy-700 dark:text-navy-200 hover:bg-navy-100 dark:hover:bg-navy-700 border border-navy-200 dark:border-navy-700'
+          }`}
         >
           🏀 Enter Results
         </button>
@@ -62,7 +78,6 @@ export function AdminPanel() {
   )
 }
 
-// --- Entrants Manager with Drag & Drop ---
 function EntrantsManager() {
   const [entrants, setEntrants] = useState<Entrant[]>([])
   const [loading, setLoading] = useState(true)
@@ -96,30 +111,21 @@ function EntrantsManager() {
     }
   }
 
-  // Drag & drop reorder within a region
   const handleReorder = async (region: string, draggedId: string, targetSeed: number) => {
     setSaving(true)
-    const regionEntrants = entrants
-      .filter(e => e.region === region)
-      .sort((a, b) => a.seed - b.seed)
-
+    const regionEntrants = entrants.filter(e => e.region === region).sort((a, b) => a.seed - b.seed)
     const draggedIdx = regionEntrants.findIndex(e => e.id === draggedId)
     if (draggedIdx === -1) { setSaving(false); return }
 
     const dragged = regionEntrants[draggedIdx]
     const targetIdx = targetSeed - 1
-
     if (draggedIdx === targetIdx) { setSaving(false); return }
 
-    // Remove dragged and insert at target position
     const reordered = [...regionEntrants]
     reordered.splice(draggedIdx, 1)
     reordered.splice(targetIdx, 0, dragged)
-
-    // Assign new seeds 1-16
     const updates = reordered.map((e, i) => ({ id: e.id, seed: i + 1 }))
 
-    // Optimistic update
     setEntrants(prev => {
       const updated = [...prev]
       for (const u of updates) {
@@ -129,7 +135,6 @@ function EntrantsManager() {
       return updated
     })
 
-    // Save to backend
     try {
       const res = await fetch('/api/admin/entrants', {
         method: 'PUT',
@@ -138,7 +143,6 @@ function EntrantsManager() {
       })
       if (!res.ok) throw new Error('Save failed')
     } catch {
-      // Revert on error
       const data = await fetch('/api/admin/entrants').then(r => r.json())
       setEntrants(data.entrants)
     } finally {
@@ -146,35 +150,55 @@ function EntrantsManager() {
     }
   }
 
-  if (loading) return <div className="text-center py-8 text-gray-500">Loading entrants...</div>
+  if (loading) return <div className="text-center py-8 text-navy-500 dark:text-navy-400">Loading entrants...</div>
 
-  const regions = filterRegion === 'all'
-    ? Object.keys(REGION_LABELS)
-    : [filterRegion]
+  const regions = filterRegion === 'all' ? Object.keys(REGION_LABELS) : [filterRegion]
 
   return (
     <div>
       {saving && (
-        <div className="fixed top-4 right-4 bg-blue-600 text-white px-4 py-2 rounded-lg shadow-lg z-50">Saving...</div>
+        <div className="fixed top-20 right-4 bg-gold-400 text-navy-900 px-4 py-2 rounded-lg shadow-lg z-50 font-semibold">
+          Saving...
+        </div>
       )}
 
+      {/* Region filter */}
       <div className="mb-4 flex gap-2 flex-wrap">
-        <button onClick={() => setFilterRegion('all')} className={`px-3 py-1 rounded text-sm ${filterRegion === 'all' ? 'bg-gray-800 text-white' : 'bg-white'}`}>All Regions</button>
+        <button
+          onClick={() => setFilterRegion('all')}
+          className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+            filterRegion === 'all' 
+              ? 'bg-navy-800 dark:bg-navy-600 text-white' 
+              : 'bg-white dark:bg-navy-800 text-navy-700 dark:text-navy-200 border border-navy-200 dark:border-navy-700'
+          }`}
+        >
+          All Regions
+        </button>
         {Object.entries(REGION_LABELS).map(([k, v]) => (
-          <button key={k} onClick={() => setFilterRegion(k)} className={`px-3 py-1 rounded text-sm ${filterRegion === k ? 'bg-gray-800 text-white' : 'bg-white'}`}>{v}</button>
+          <button
+            key={k}
+            onClick={() => setFilterRegion(k)}
+            className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+              filterRegion === k 
+                ? 'bg-navy-800 dark:bg-navy-600 text-white' 
+                : 'bg-white dark:bg-navy-800 text-navy-700 dark:text-navy-200 border border-navy-200 dark:border-navy-700'
+            }`}
+          >
+            {v}
+          </button>
         ))}
       </div>
 
-      <p className="text-sm text-gray-500 mb-4">💡 Drag and drop entrants to reorder their seed within a region. Click the name to edit it.</p>
+      <p className="text-sm text-navy-500 dark:text-navy-400 mb-4 card p-3 border-l-4 border-l-gold-400">
+        💡 <strong>Tip:</strong> Drag and drop entrants to reorder their seed. Click the ✏️ to edit names.
+      </p>
 
       {regions.map(region => {
-        const regionEntrants = entrants
-          .filter(e => e.region === region)
-          .sort((a, b) => a.seed - b.seed)
+        const regionEntrants = entrants.filter(e => e.region === region).sort((a, b) => a.seed - b.seed)
 
         return (
           <div key={region} className="mb-6">
-            <h4 className="font-bold text-lg mb-2">{REGION_LABELS[region]}</h4>
+            <h4 className="font-bold text-lg mb-3 text-navy-900 dark:text-white">{REGION_LABELS[region]}</h4>
             <DraggableList
               entrants={regionEntrants}
               region={region}
@@ -193,17 +217,8 @@ function EntrantsManager() {
   )
 }
 
-// --- Draggable List ---
 function DraggableList({
-  entrants,
-  region,
-  editingId,
-  editName,
-  setEditName,
-  onStartEdit,
-  onSaveEdit,
-  onCancelEdit,
-  onReorder,
+  entrants, region, editingId, editName, setEditName, onStartEdit, onSaveEdit, onCancelEdit, onReorder,
 }: {
   entrants: Entrant[]
   region: string
@@ -230,16 +245,10 @@ function DraggableList({
     setDragOverSeed(seed)
   }
 
-  const handleDragLeave = () => {
-    setDragOverSeed(null)
-  }
-
   const handleDrop = (e: React.DragEvent, targetSeed: number) => {
     e.preventDefault()
     const id = e.dataTransfer.getData('text/plain')
-    if (id) {
-      onReorder(region, id, targetSeed)
-    }
+    if (id) onReorder(region, id, targetSeed)
     setDraggedId(null)
     setDragOverSeed(null)
   }
@@ -249,8 +258,10 @@ function DraggableList({
     setDragOverSeed(null)
   }
 
+  const borderColor = REGION_COLORS[region] || 'border-l-navy-400'
+
   return (
-    <div className="bg-white rounded-lg shadow overflow-hidden">
+    <div className={`card overflow-hidden border-l-4 ${borderColor}`}>
       {entrants.map(entrant => {
         const isDragging = draggedId === entrant.id
         const isDragOver = dragOverSeed === entrant.seed
@@ -262,43 +273,40 @@ function DraggableList({
             draggable={!isEditing}
             onDragStart={(e) => handleDragStart(e, entrant.id)}
             onDragOver={(e) => handleDragOver(e, entrant.seed)}
-            onDragLeave={handleDragLeave}
+            onDragLeave={() => setDragOverSeed(null)}
             onDrop={(e) => handleDrop(e, entrant.seed)}
             onDragEnd={handleDragEnd}
             className={`
-              flex items-center gap-3 px-4 py-3 border-b border-gray-100 transition-all
-              ${isDragging ? 'opacity-40 bg-gray-100' : ''}
-              ${isDragOver && !isDragging ? 'border-t-2 border-t-blue-500 bg-blue-50' : ''}
+              flex items-center gap-3 px-4 py-3 border-b border-navy-100 dark:border-navy-700 last:border-b-0 transition-all
+              ${isDragging ? 'opacity-40 bg-navy-100 dark:bg-navy-700' : ''}
+              ${isDragOver && !isDragging ? 'border-t-2 border-t-gold-400 bg-gold-50 dark:bg-gold-900/20' : ''}
               ${!isEditing ? 'cursor-grab active:cursor-grabbing' : ''}
             `}
           >
-            {/* Drag handle */}
-            <div className="text-gray-300 select-none shrink-0">⠿</div>
+            <div className="text-navy-300 dark:text-navy-600 select-none shrink-0 text-lg">⠿</div>
 
-            {/* Seed badge */}
-            <div className="bg-gray-800 text-white w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold shrink-0">
+            <div className="bg-navy-800 dark:bg-navy-600 text-white w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold shrink-0">
               {entrant.seed}
             </div>
 
-            {/* Name */}
             {isEditing ? (
               <div className="flex-1 flex items-center gap-2">
                 <input
                   value={editName}
                   onChange={e => setEditName(e.target.value)}
                   onKeyDown={e => e.key === 'Enter' && onSaveEdit(entrant.id)}
-                  className="border rounded px-2 py-1 flex-1 text-gray-900"
+                  className="input flex-1"
                   autoFocus
                 />
-                <button onClick={() => onSaveEdit(entrant.id)} className="bg-green-600 text-white px-3 py-1 rounded text-xs">Save</button>
-                <button onClick={onCancelEdit} className="bg-gray-400 text-white px-3 py-1 rounded text-xs">Cancel</button>
+                <button onClick={() => onSaveEdit(entrant.id)} className="btn-primary text-sm px-3 py-1.5">Save</button>
+                <button onClick={onCancelEdit} className="bg-navy-200 dark:bg-navy-700 text-navy-700 dark:text-navy-200 px-3 py-1.5 rounded-lg text-sm font-medium">Cancel</button>
               </div>
             ) : (
               <div className="flex-1 flex items-center justify-between">
-                <span className="font-medium text-gray-900">{entrant.displayName}</span>
+                <span className="font-medium text-navy-900 dark:text-white">{entrant.displayName}</span>
                 <button
                   onClick={(e) => { e.stopPropagation(); onStartEdit(entrant) }}
-                  className="text-blue-600 hover:text-blue-800 text-xs font-medium px-2 py-1 rounded hover:bg-blue-50"
+                  className="text-gold-600 dark:text-gold-400 hover:text-gold-500 text-sm font-medium px-3 py-1.5 rounded-lg hover:bg-gold-50 dark:hover:bg-gold-900/20 transition-colors"
                 >
                   ✏️ Edit
                 </button>
@@ -311,7 +319,6 @@ function DraggableList({
   )
 }
 
-// --- Results Manager ---
 function ResultsManager() {
   const [selectedRound, setSelectedRound] = useState('R64')
   const [matches, setMatches] = useState<Match[]>([])
@@ -342,12 +349,17 @@ function ResultsManager() {
 
   return (
     <div>
+      {/* Round selector */}
       <div className="mb-4 flex gap-2 flex-wrap">
         {ROUNDS.map(r => (
           <button
             key={r}
             onClick={() => setSelectedRound(r)}
-            className={`px-4 py-2 rounded-lg text-sm font-semibold ${selectedRound === r ? 'bg-green-600 text-white' : 'bg-white text-gray-700 hover:bg-gray-100'}`}
+            className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all ${
+              selectedRound === r 
+                ? 'bg-emerald-500 text-white shadow-md' 
+                : 'bg-white dark:bg-navy-800 text-navy-700 dark:text-navy-200 border border-navy-200 dark:border-navy-700 hover:bg-navy-100 dark:hover:bg-navy-700'
+            }`}
           >
             {ROUND_LABELS[r]}
           </button>
@@ -355,49 +367,67 @@ function ResultsManager() {
       </div>
 
       {loading ? (
-        <div className="text-center py-8 text-gray-500">Loading matches...</div>
+        <div className="text-center py-8 text-navy-500 dark:text-navy-400">Loading matches...</div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {matches.map(match => (
-            <div key={match.id} className="bg-white rounded-lg shadow p-4">
-              <div className="text-xs text-gray-500 mb-2">
-                {match.region ? REGION_LABELS[match.region] : 'Cross-Region'} • Match #{match.matchNumber}
-                {match.winnerEntrant && <span className="ml-2 text-green-600 font-semibold">✅ Complete</span>}
-              </div>
-
-              {!match.leftEntrant && !match.rightEntrant ? (
-                <div className="text-gray-400 italic text-sm">Waiting for previous round results</div>
-              ) : (
-                <div className="space-y-2">
-                  {match.leftEntrant && (
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <span className="bg-gray-200 px-2 py-0.5 rounded text-xs font-bold">{match.leftEntrant.seed}</span>
-                        <span className={match.winnerEntrant?.id === match.leftEntrant.id ? 'font-bold text-green-700' : ''}>{match.leftEntrant.displayName}</span>
-                        {match.winnerEntrant?.id === match.leftEntrant.id && <span>🏆</span>}
-                      </div>
-                      {!match.winnerEntrant && (
-                        <button onClick={() => setWinner(match.id, match.leftEntrant!.id)} className="bg-green-600 text-white px-3 py-1 rounded text-xs">Winner</button>
-                      )}
-                    </div>
-                  )}
-                  <div className="text-center text-xs text-gray-400">vs</div>
-                  {match.rightEntrant && (
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <span className="bg-gray-200 px-2 py-0.5 rounded text-xs font-bold">{match.rightEntrant.seed}</span>
-                        <span className={match.winnerEntrant?.id === match.rightEntrant.id ? 'font-bold text-green-700' : ''}>{match.rightEntrant.displayName}</span>
-                        {match.winnerEntrant?.id === match.rightEntrant.id && <span>🏆</span>}
-                      </div>
-                      {!match.winnerEntrant && (
-                        <button onClick={() => setWinner(match.id, match.rightEntrant!.id)} className="bg-green-600 text-white px-3 py-1 rounded text-xs">Winner</button>
-                      )}
-                    </div>
-                  )}
+          {matches.map(match => {
+            const borderColor = match.region ? REGION_COLORS[match.region] : 'border-l-gold-500'
+            
+            return (
+              <div key={match.id} className={`card p-4 border-l-4 ${borderColor}`}>
+                <div className="text-xs text-navy-500 dark:text-navy-400 mb-3 flex items-center justify-between">
+                  <span>{match.region ? REGION_LABELS[match.region] : 'Cross-Region'} • Match #{match.matchNumber}</span>
+                  {match.winnerEntrant && <span className="badge badge-success">✅ Complete</span>}
                 </div>
-              )}
-            </div>
-          ))}
+
+                {!match.leftEntrant && !match.rightEntrant ? (
+                  <div className="text-navy-400 dark:text-navy-500 italic text-sm py-4 text-center">
+                    Waiting for previous round results
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    {match.leftEntrant && (
+                      <div className="flex items-center justify-between p-2 rounded-lg bg-navy-50 dark:bg-navy-800">
+                        <div className="flex items-center gap-2">
+                          <span className="bg-navy-800 dark:bg-navy-600 text-white w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold">
+                            {match.leftEntrant.seed}
+                          </span>
+                          <span className={match.winnerEntrant?.id === match.leftEntrant.id ? 'font-bold text-emerald-600 dark:text-emerald-400' : 'text-navy-700 dark:text-navy-200'}>
+                            {match.leftEntrant.displayName}
+                          </span>
+                          {match.winnerEntrant?.id === match.leftEntrant.id && <span>🏆</span>}
+                        </div>
+                        {!match.winnerEntrant && (
+                          <button onClick={() => setWinner(match.id, match.leftEntrant!.id)} className="bg-emerald-500 hover:bg-emerald-600 text-white px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors">
+                            Winner
+                          </button>
+                        )}
+                      </div>
+                    )}
+                    <div className="text-center text-xs text-navy-400 dark:text-navy-500 font-semibold">VS</div>
+                    {match.rightEntrant && (
+                      <div className="flex items-center justify-between p-2 rounded-lg bg-navy-50 dark:bg-navy-800">
+                        <div className="flex items-center gap-2">
+                          <span className="bg-navy-800 dark:bg-navy-600 text-white w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold">
+                            {match.rightEntrant.seed}
+                          </span>
+                          <span className={match.winnerEntrant?.id === match.rightEntrant.id ? 'font-bold text-emerald-600 dark:text-emerald-400' : 'text-navy-700 dark:text-navy-200'}>
+                            {match.rightEntrant.displayName}
+                          </span>
+                          {match.winnerEntrant?.id === match.rightEntrant.id && <span>🏆</span>}
+                        </div>
+                        {!match.winnerEntrant && (
+                          <button onClick={() => setWinner(match.id, match.rightEntrant!.id)} className="bg-emerald-500 hover:bg-emerald-600 text-white px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors">
+                            Winner
+                          </button>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            )
+          })}
         </div>
       )}
     </div>

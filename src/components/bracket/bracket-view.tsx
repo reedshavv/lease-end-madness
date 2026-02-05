@@ -1,8 +1,8 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-import { computeVirtualEntrants, getDownstreamMatchIds, REGIONS, ROUND_ORDER } from '@/lib/bracket-progression'
-import type { MatchInfo, EntrantInfo } from '@/lib/bracket-progression'
+import { computeVirtualEntrants, REGIONS } from '@/lib/bracket-progression'
+import type { MatchInfo, EntrantInfo, RoundName } from '@/lib/bracket-progression'
 
 interface BracketViewProps {
   bracketId: string
@@ -26,11 +26,11 @@ const REGION_LABELS: Record<string, string> = {
   WADVISORS: 'wAdvisors',
 }
 
-const REGION_COLORS: Record<string, string> = {
-  IADVISORS: 'from-blue-500 to-blue-600',
-  XADVISORS: 'from-green-500 to-green-600',
-  FINANCIAL_SPECIALISTS: 'from-purple-500 to-purple-600',
-  WADVISORS: 'from-red-500 to-red-600',
+const REGION_COLORS: Record<string, { bg: string; border: string; text: string }> = {
+  IADVISORS: { bg: 'bg-blue-600', border: 'border-l-blue-500', text: 'text-blue-600' },
+  XADVISORS: { bg: 'bg-emerald-600', border: 'border-l-emerald-500', text: 'text-emerald-600' },
+  FINANCIAL_SPECIALISTS: { bg: 'bg-purple-600', border: 'border-l-purple-500', text: 'text-purple-600' },
+  WADVISORS: { bg: 'bg-rose-600', border: 'border-l-rose-500', text: 'text-rose-600' },
 }
 
 export function BracketView({ bracketId, isLocked, isAdmin }: BracketViewProps) {
@@ -73,26 +73,30 @@ export function BracketView({ bracketId, isLocked, isAdmin }: BracketViewProps) 
   }
 
   if (loading) {
-    return <div className="text-center py-16 text-xl text-gray-500">Loading bracket...</div>
+    return (
+      <div className="flex items-center justify-center py-16">
+        <div className="text-xl text-navy-500 dark:text-navy-400">Loading bracket...</div>
+      </div>
+    )
   }
 
-  // Separate regional and cross-regional matches
-  const regionalRounds = ['R64', 'R32', 'S16', 'E8']
   const canPick = !isLocked || isAdmin
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6">
+      {/* Lock Banner */}
       {isLocked && (
-        <div className="bg-red-50 border border-red-200 rounded-lg p-4 text-center">
-          <span className="text-red-800 font-semibold">
+        <div className="card p-4 text-center border-l-4 border-l-rose-500">
+          <span className="text-rose-700 dark:text-rose-300 font-semibold">
             🔒 Bracket Locked — No more changes allowed
             {isAdmin && ' (Admin override active)'}
           </span>
         </div>
       )}
 
+      {/* Saving indicator */}
       {saving && (
-        <div className="fixed top-4 right-4 bg-blue-600 text-white px-4 py-2 rounded-lg shadow-lg z-50">
+        <div className="fixed top-20 right-4 bg-gold-400 text-navy-900 px-4 py-2 rounded-lg shadow-lg z-50 font-semibold">
           Saving...
         </div>
       )}
@@ -103,7 +107,6 @@ export function BracketView({ bracketId, isLocked, isAdmin }: BracketViewProps) 
           <RegionBracket
             key={region}
             region={region}
-            matches={matches}
             allMatches={matches}
             onPick={handlePick}
             canPick={canPick}
@@ -111,46 +114,47 @@ export function BracketView({ bracketId, isLocked, isAdmin }: BracketViewProps) 
         ))}
       </div>
 
-      {/* Final Four */}
+      {/* Final Four & Championship */}
       <FinalRounds matches={matches} onPick={handlePick} canPick={canPick} />
     </div>
   )
 }
 
-// --- Region Bracket ---
 function RegionBracket({
   region,
-  matches,
   allMatches,
   onPick,
   canPick,
 }: {
   region: string
-  matches: MatchInfo[]
   allMatches: MatchInfo[]
   onPick: (matchId: string, entrantId: string) => void
   canPick: boolean
 }) {
   const regionalRounds = ['R64', 'R32', 'S16', 'E8'] as const
+  const colors = REGION_COLORS[region]
 
   return (
-    <div className="bg-white rounded-lg shadow-lg overflow-hidden">
-      <div className={`bg-gradient-to-r ${REGION_COLORS[region]} text-white p-3`}>
-        <h3 className="text-lg font-bold text-center">{REGION_LABELS[region]}</h3>
+    <div className="card overflow-hidden">
+      {/* Region Header */}
+      <div className={`${colors.bg} text-white p-4`}>
+        <h3 className="text-xl font-bold text-center">{REGION_LABELS[region]}</h3>
       </div>
-      <div className="p-3 overflow-x-auto">
-        <div className="flex gap-3 min-w-[700px]">
+      
+      {/* Bracket Grid */}
+      <div className="p-4 overflow-x-auto">
+        <div className="flex gap-3 min-w-[720px]">
           {regionalRounds.map(round => {
             const roundMatches = allMatches
               .filter(m => m.round === round && m.region === region)
               .sort((a, b) => a.matchNumber - b.matchNumber)
 
             return (
-              <div key={round} className="flex-1 min-w-[160px]">
-                <div className="text-xs font-semibold text-gray-500 text-center mb-2">
+              <div key={round} className="flex-1 min-w-[170px]">
+                <div className="text-xs font-bold text-navy-500 dark:text-navy-400 text-center mb-3 uppercase tracking-wide">
                   {ROUND_LABELS[round]}
                 </div>
-                <div className="space-y-2 flex flex-col justify-around h-full">
+                <div className="space-y-2 flex flex-col justify-around">
                   {roundMatches.map(match => (
                     <MatchCard
                       key={match.id}
@@ -158,6 +162,7 @@ function RegionBracket({
                       allMatches={allMatches}
                       onPick={onPick}
                       canPick={canPick}
+                      regionColor={colors.border}
                     />
                   ))}
                 </div>
@@ -170,7 +175,6 @@ function RegionBracket({
   )
 }
 
-// --- Final Rounds (F4 + Championship) ---
 function FinalRounds({
   matches,
   onPick,
@@ -184,23 +188,46 @@ function FinalRounds({
   const champMatch = matches.find(m => m.round === 'CHAMP')
 
   return (
-    <div className="bg-white rounded-lg shadow-lg p-6">
-      <h3 className="text-2xl font-bold text-center mb-6 text-indigo-600">🏆 Final Four & Championship</h3>
-      <div className="flex flex-col items-center gap-6">
-        <div className="flex gap-8 justify-center">
-          {f4Matches.map(match => (
-            <div key={match.id} className="w-64">
-              <div className="text-xs font-semibold text-gray-500 text-center mb-2">
-                {match.matchNumber === 1 ? 'iAdvisors vs xAdvisors' : 'Fin. Specialists vs wAdvisors'}
+    <div className="card p-6">
+      <div className="text-center mb-6">
+        <span className="inline-flex items-center bg-gold-400 text-navy-900 px-6 py-2 rounded-full font-bold text-lg">
+          🏆 Final Four & Championship 🏆
+        </span>
+      </div>
+      
+      <div className="flex flex-col items-center gap-8">
+        {/* Final Four */}
+        <div className="flex flex-wrap justify-center gap-8">
+          {f4Matches.map((match, i) => (
+            <div key={match.id} className="w-72">
+              <div className="text-sm font-semibold text-navy-500 dark:text-navy-400 text-center mb-2">
+                {i === 0 ? 'iAdvisors vs xAdvisors' : 'Fin. Specialists vs wAdvisors'}
               </div>
-              <MatchCard match={match} allMatches={matches} onPick={onPick} canPick={canPick} />
+              <MatchCard
+                match={match}
+                allMatches={matches}
+                onPick={onPick}
+                canPick={canPick}
+                regionColor="border-l-gold-500"
+              />
             </div>
           ))}
         </div>
+
+        {/* Championship */}
         {champMatch && (
-          <div className="w-72">
-            <div className="text-sm font-bold text-yellow-600 text-center mb-2">👑 Championship</div>
-            <MatchCard match={champMatch} allMatches={matches} onPick={onPick} canPick={canPick} isChamp />
+          <div className="w-80">
+            <div className="text-center mb-2">
+              <span className="text-lg font-bold text-gold-600 dark:text-gold-400">👑 Championship 👑</span>
+            </div>
+            <MatchCard
+              match={champMatch}
+              allMatches={matches}
+              onPick={onPick}
+              canPick={canPick}
+              regionColor="border-l-gold-500"
+              isChamp
+            />
           </div>
         )}
       </div>
@@ -208,29 +235,29 @@ function FinalRounds({
   )
 }
 
-// --- Individual Match Card ---
 function MatchCard({
   match,
   allMatches,
   onPick,
   canPick,
+  regionColor,
   isChamp,
 }: {
   match: MatchInfo
   allMatches: MatchInfo[]
   onPick: (matchId: string, entrantId: string) => void
   canPick: boolean
+  regionColor: string
   isChamp?: boolean
 }) {
-  // Compute virtual entrants (from cascading picks for R32+)
   const { left, right } = computeVirtualEntrants(allMatches, match)
   const pickId = match.userPick?.pickedWinnerEntrantId
   const bothReady = !!left && !!right
 
-  const renderEntrant = (entrant: EntrantInfo | null, side: 'left' | 'right') => {
+  const renderEntrant = (entrant: EntrantInfo | null) => {
     if (!entrant) {
       return (
-        <div className="flex items-center p-1.5 border-2 border-dashed border-gray-200 rounded text-gray-400 text-xs">
+        <div className="flex items-center p-2 border-2 border-dashed border-navy-200 dark:border-navy-600 rounded-lg text-navy-400 dark:text-navy-500 text-sm">
           <span className="italic">TBD</span>
         </div>
       )
@@ -241,16 +268,17 @@ function MatchCard({
     const isActualLoser = match.winnerEntrant && match.winnerEntrant.id !== entrant.id
     const clickable = canPick && bothReady && !match.winnerEntrant
 
-    let classes = 'flex items-center justify-between p-1.5 border-2 rounded text-xs transition-all '
+    let classes = 'flex items-center justify-between p-2 border-2 rounded-lg text-sm transition-all '
+    
     if (isActualWinner) {
-      classes += 'bg-green-100 border-green-500 text-green-800 font-bold '
+      classes += 'bg-emerald-100 dark:bg-emerald-900/40 border-emerald-500 text-emerald-800 dark:text-emerald-200 font-bold '
     } else if (isActualLoser) {
-      classes += 'bg-gray-100 border-gray-300 text-gray-400 line-through '
+      classes += 'bg-navy-100 dark:bg-navy-800 border-navy-200 dark:border-navy-700 text-navy-400 dark:text-navy-500 line-through opacity-60 '
     } else if (isPicked) {
-      classes += 'bg-blue-100 border-blue-500 text-blue-800 font-semibold '
+      classes += 'bg-gold-100 dark:bg-gold-900/30 border-gold-400 text-navy-800 dark:text-gold-200 font-semibold '
     } else {
-      classes += 'bg-white border-gray-200 '
-      if (clickable) classes += 'hover:border-blue-400 hover:bg-blue-50 cursor-pointer '
+      classes += 'bg-white dark:bg-navy-800 border-navy-200 dark:border-navy-600 text-navy-700 dark:text-navy-200 '
+      if (clickable) classes += 'hover:border-gold-400 hover:bg-gold-50 dark:hover:bg-gold-900/20 cursor-pointer '
     }
 
     return (
@@ -258,23 +286,25 @@ function MatchCard({
         className={classes}
         onClick={() => clickable && onPick(match.id, entrant.id)}
       >
-        <div className="flex items-center gap-1 overflow-hidden">
-          <span className="bg-gray-200 text-gray-600 px-1 rounded text-[10px] font-bold shrink-0">
+        <div className="flex items-center gap-2 overflow-hidden">
+          <span className="bg-navy-800 dark:bg-navy-600 text-white w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold shrink-0">
             {entrant.seed}
           </span>
           <span className="truncate">{entrant.displayName}</span>
         </div>
-        {isPicked && <span className="text-blue-500 shrink-0">✓</span>}
-        {isActualWinner && <span className="shrink-0">🏆</span>}
+        <div className="flex items-center gap-1 shrink-0">
+          {isPicked && <span className="text-gold-500">✓</span>}
+          {isActualWinner && <span>🏆</span>}
+        </div>
       </div>
     )
   }
 
   return (
-    <div className={`rounded border ${isChamp ? 'border-yellow-300 bg-yellow-50' : 'border-gray-200 bg-gray-50'} p-1.5 space-y-1`}>
-      {renderEntrant(left, 'left')}
-      <div className="text-center text-[10px] text-gray-400">vs</div>
-      {renderEntrant(right, 'right')}
+    <div className={`rounded-xl border-l-4 ${regionColor} ${isChamp ? 'bg-gold-50 dark:bg-gold-900/20 border border-gold-200 dark:border-gold-800' : 'bg-navy-50 dark:bg-navy-800/50 border border-navy-200 dark:border-navy-700'} p-2 space-y-1.5`}>
+      {renderEntrant(left)}
+      <div className="text-center text-xs text-navy-400 dark:text-navy-500 font-semibold">VS</div>
+      {renderEntrant(right)}
     </div>
   )
 }
