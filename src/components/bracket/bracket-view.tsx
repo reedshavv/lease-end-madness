@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { computeVirtualEntrants, REGIONS } from '@/lib/bracket-progression'
-import type { MatchInfo, EntrantInfo, RoundName } from '@/lib/bracket-progression'
+import type { MatchInfo, EntrantInfo } from '@/lib/bracket-progression'
 
 interface BracketViewProps {
   bracketId: string
@@ -26,11 +26,11 @@ const REGION_LABELS: Record<string, string> = {
   WADVISORS: 'wAdvisors',
 }
 
-const REGION_COLORS: Record<string, { bg: string; border: string; text: string }> = {
-  IADVISORS: { bg: 'bg-blue-600', border: 'border-l-blue-500', text: 'text-blue-600' },
-  XADVISORS: { bg: 'bg-emerald-600', border: 'border-l-emerald-500', text: 'text-emerald-600' },
-  FINANCIAL_SPECIALISTS: { bg: 'bg-purple-600', border: 'border-l-purple-500', text: 'text-purple-600' },
-  WADVISORS: { bg: 'bg-rose-600', border: 'border-l-rose-500', text: 'text-rose-600' },
+const REGION_COLORS: Record<string, { bg: string; border: string; light: string }> = {
+  IADVISORS: { bg: 'bg-blue-600', border: 'border-l-blue-500', light: 'bg-blue-500/10' },
+  XADVISORS: { bg: 'bg-emerald-600', border: 'border-l-emerald-500', light: 'bg-emerald-500/10' },
+  FINANCIAL_SPECIALISTS: { bg: 'bg-violet-600', border: 'border-l-violet-500', light: 'bg-violet-500/10' },
+  WADVISORS: { bg: 'bg-rose-600', border: 'border-l-rose-500', light: 'bg-rose-500/10' },
 }
 
 export function BracketView({ bracketId, isLocked, isAdmin }: BracketViewProps) {
@@ -74,8 +74,11 @@ export function BracketView({ bracketId, isLocked, isAdmin }: BracketViewProps) 
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center py-16">
-        <div className="text-xl text-navy-500 dark:text-navy-400">Loading bracket...</div>
+      <div className="flex items-center justify-center py-20">
+        <div className="text-center">
+          <div className="w-8 h-8 border-4 border-navy-300 border-t-navy-600 rounded-full animate-spin mx-auto mb-4" />
+          <div className="text-navy-500 dark:text-navy-400">Loading bracket...</div>
+        </div>
       </div>
     )
   }
@@ -84,25 +87,15 @@ export function BracketView({ bracketId, isLocked, isAdmin }: BracketViewProps) 
 
   return (
     <div className="space-y-6">
-      {/* Lock Banner */}
-      {isLocked && (
-        <div className="card p-4 text-center border-l-4 border-l-rose-500">
-          <span className="text-rose-700 dark:text-rose-300 font-semibold">
-            🔒 Bracket Locked — No more changes allowed
-            {isAdmin && ' (Admin override active)'}
-          </span>
-        </div>
-      )}
-
-      {/* Saving indicator */}
       {saving && (
-        <div className="fixed top-20 right-4 bg-navy-400 text-navy-900 px-4 py-2 rounded-lg shadow-lg z-50 font-semibold">
+        <div className="fixed top-4 right-4 bg-navy-800 text-white px-4 py-2 rounded-lg shadow-lg z-50 flex items-center gap-2">
+          <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
           Saving...
         </div>
       )}
 
       {/* Regional Brackets */}
-      <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
         {REGIONS.map(region => (
           <RegionBracket
             key={region}
@@ -135,26 +128,26 @@ function RegionBracket({
   const colors = REGION_COLORS[region]
 
   return (
-    <div className="card overflow-hidden">
+    <div className="card overflow-hidden border-0 shadow-md">
       {/* Region Header */}
-      <div className={`${colors.bg} text-white p-4`}>
-        <h3 className="text-xl font-bold text-center">{REGION_LABELS[region]}</h3>
+      <div className={`${colors.bg} text-white px-4 py-3`}>
+        <h3 className="font-bold text-center">{REGION_LABELS[region]}</h3>
       </div>
       
       {/* Bracket Grid */}
-      <div className="p-4 overflow-x-auto">
-        <div className="flex gap-3 min-w-[720px]">
-          {regionalRounds.map(round => {
+      <div className="p-3 overflow-x-auto bg-white dark:bg-navy-900">
+        <div className="flex gap-2 min-w-[680px]">
+          {regionalRounds.map((round, roundIdx) => {
             const roundMatches = allMatches
               .filter(m => m.round === round && m.region === region)
               .sort((a, b) => a.matchNumber - b.matchNumber)
 
             return (
-              <div key={round} className="flex-1 min-w-[170px]">
-                <div className="text-xs font-bold text-navy-500 dark:text-navy-400 text-center mb-3 uppercase tracking-wide">
-                  {ROUND_LABELS[round]}
+              <div key={round} className="flex-1">
+                <div className="text-[10px] font-bold text-navy-400 dark:text-navy-500 text-center mb-2 uppercase tracking-wider">
+                  {round === 'R64' ? 'R64' : round === 'R32' ? 'R32' : round === 'S16' ? 'S16' : 'E8'}
                 </div>
-                <div className="space-y-2 flex flex-col justify-around">
+                <div className={`space-y-1 flex flex-col ${roundIdx === 0 ? '' : 'justify-around h-full'}`}>
                   {roundMatches.map(match => (
                     <MatchCard
                       key={match.id}
@@ -163,6 +156,7 @@ function RegionBracket({
                       onPick={onPick}
                       canPick={canPick}
                       regionColor={colors.border}
+                      compact={roundIdx === 0}
                     />
                   ))}
                 </div>
@@ -188,19 +182,19 @@ function FinalRounds({
   const champMatch = matches.find(m => m.round === 'CHAMP')
 
   return (
-    <div className="card p-6">
+    <div className="card p-6 border-0 shadow-md bg-gradient-to-br from-white to-navy-50 dark:from-navy-900 dark:to-navy-800">
       <div className="text-center mb-6">
-        <span className="inline-flex items-center bg-navy-400 text-navy-900 px-6 py-2 rounded-full font-bold text-lg">
-          🏆 Final Four & Championship 🏆
+        <span className="inline-flex items-center bg-navy-800 dark:bg-navy-700 text-white px-6 py-2 rounded-xl font-bold text-lg">
+          🏆 Final Four & Championship
         </span>
       </div>
       
-      <div className="flex flex-col items-center gap-8">
+      <div className="flex flex-col items-center gap-6">
         {/* Final Four */}
-        <div className="flex flex-wrap justify-center gap-8">
+        <div className="flex flex-wrap justify-center gap-6">
           {f4Matches.map((match, i) => (
-            <div key={match.id} className="w-72">
-              <div className="text-sm font-semibold text-navy-500 dark:text-navy-400 text-center mb-2">
+            <div key={match.id} className="w-64">
+              <div className="text-xs font-semibold text-navy-500 dark:text-navy-400 text-center mb-2">
                 {i === 0 ? 'iAdvisors vs xAdvisors' : 'Fin. Specialists vs wAdvisors'}
               </div>
               <MatchCard
@@ -208,7 +202,7 @@ function FinalRounds({
                 allMatches={matches}
                 onPick={onPick}
                 canPick={canPick}
-                regionColor="border-l-navy-500"
+                regionColor="border-l-navy-400"
               />
             </div>
           ))}
@@ -216,16 +210,16 @@ function FinalRounds({
 
         {/* Championship */}
         {champMatch && (
-          <div className="w-80">
+          <div className="w-72">
             <div className="text-center mb-2">
-              <span className="text-lg font-bold text-navy-500 dark:text-navy-400">👑 Championship 👑</span>
+              <span className="text-sm font-bold text-navy-600 dark:text-navy-300">👑 Championship</span>
             </div>
             <MatchCard
               match={champMatch}
               allMatches={matches}
               onPick={onPick}
               canPick={canPick}
-              regionColor="border-l-navy-500"
+              regionColor="border-l-navy-400"
               isChamp
             />
           </div>
@@ -242,6 +236,7 @@ function MatchCard({
   canPick,
   regionColor,
   isChamp,
+  compact,
 }: {
   match: MatchInfo
   allMatches: MatchInfo[]
@@ -249,6 +244,7 @@ function MatchCard({
   canPick: boolean
   regionColor: string
   isChamp?: boolean
+  compact?: boolean
 }) {
   const { left, right } = computeVirtualEntrants(allMatches, match)
   const pickId = match.userPick?.pickedWinnerEntrantId
@@ -257,7 +253,7 @@ function MatchCard({
   const renderEntrant = (entrant: EntrantInfo | null) => {
     if (!entrant) {
       return (
-        <div className="flex items-center p-2 border-2 border-dashed border-navy-200 dark:border-navy-600 rounded-lg text-navy-400 dark:text-navy-500 text-sm">
+        <div className="flex items-center px-2 py-1.5 border border-dashed border-navy-200 dark:border-navy-600 rounded text-navy-400 dark:text-navy-500 text-xs">
           <span className="italic">TBD</span>
         </div>
       )
@@ -268,42 +264,39 @@ function MatchCard({
     const isActualLoser = match.winnerEntrant && match.winnerEntrant.id !== entrant.id
     const clickable = canPick && bothReady && !match.winnerEntrant
 
-    let classes = 'flex items-center justify-between p-2 border-2 rounded-lg text-sm transition-all '
+    let classes = 'flex items-center justify-between px-2 py-1.5 border rounded text-xs transition-all '
     
     if (isActualWinner) {
-      classes += 'bg-emerald-100 dark:bg-emerald-900/40 border-emerald-500 text-emerald-800 dark:text-emerald-200 font-bold '
+      classes += 'bg-emerald-100 dark:bg-emerald-900/40 border-emerald-400 text-emerald-800 dark:text-emerald-200 font-bold '
     } else if (isActualLoser) {
-      classes += 'bg-navy-100 dark:bg-navy-800 border-navy-200 dark:border-navy-700 text-navy-400 dark:text-navy-500 line-through opacity-60 '
+      classes += 'bg-navy-100 dark:bg-navy-800 border-navy-200 dark:border-navy-700 text-navy-400 line-through opacity-50 '
     } else if (isPicked) {
-      classes += 'bg-navy-200 dark:bg-navy-800/30 border-navy-400 text-navy-800 dark:text-navy-300 font-semibold '
+      classes += 'bg-navy-100 dark:bg-navy-700 border-navy-400 text-navy-800 dark:text-white font-semibold '
     } else {
       classes += 'bg-white dark:bg-navy-800 border-navy-200 dark:border-navy-600 text-navy-700 dark:text-navy-200 '
-      if (clickable) classes += 'hover:border-navy-400 hover:bg-navy-100 dark:hover:bg-navy-800/20 cursor-pointer '
+      if (clickable) classes += 'hover:border-navy-400 hover:bg-navy-50 dark:hover:bg-navy-700 cursor-pointer '
     }
 
     return (
-      <div
-        className={classes}
-        onClick={() => clickable && onPick(match.id, entrant.id)}
-      >
-        <div className="flex items-center gap-2 overflow-hidden">
-          <span className="bg-navy-800 dark:bg-navy-600 text-white w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold shrink-0">
+      <div className={classes} onClick={() => clickable && onPick(match.id, entrant.id)}>
+        <div className="flex items-center gap-1.5 overflow-hidden">
+          <span className="bg-navy-700 dark:bg-navy-600 text-white w-5 h-5 rounded flex items-center justify-center text-[10px] font-bold shrink-0">
             {entrant.seed}
           </span>
           <span className="truncate">{entrant.displayName}</span>
         </div>
-        <div className="flex items-center gap-1 shrink-0">
-          {isPicked && <span className="text-navy-500">✓</span>}
-          {isActualWinner && <span>🏆</span>}
+        <div className="flex items-center gap-0.5 shrink-0 ml-1">
+          {isPicked && <span className="text-navy-500 dark:text-navy-300">✓</span>}
+          {isActualWinner && <span className="text-xs">🏆</span>}
         </div>
       </div>
     )
   }
 
   return (
-    <div className={`rounded-xl border-l-4 ${regionColor} ${isChamp ? 'bg-navy-100 dark:bg-navy-800/20 border border-navy-300 dark:border-gold-800' : 'bg-navy-50 dark:bg-navy-800/50 border border-navy-200 dark:border-navy-700'} p-2 space-y-1.5`}>
+    <div className={`rounded-lg border-l-4 ${regionColor} ${isChamp ? 'bg-navy-100 dark:bg-navy-800 border border-navy-200 dark:border-navy-600' : 'bg-navy-50 dark:bg-navy-800/50'} p-1.5 space-y-1`}>
       {renderEntrant(left)}
-      <div className="text-center text-xs text-navy-400 dark:text-navy-500 font-semibold">VS</div>
+      {!compact && <div className="text-center text-[9px] text-navy-400 dark:text-navy-500 font-semibold">VS</div>}
       {renderEntrant(right)}
     </div>
   )

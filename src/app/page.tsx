@@ -31,41 +31,52 @@ export default async function HomePage() {
     <div className="min-h-screen bg-navy-50 dark:bg-navy-950">
       <Navbar user={session.user} />
       
-      <main className="container mx-auto px-4 py-8">
-        {/* Hero Header */}
-        <div className="hero-card text-center mb-8 flex flex-col items-center">
-          <div className="flex items-center gap-4 mb-4">
-            <Image 
-              src="/leaseend-logo.webp" 
-              alt="Lease End" 
-              width={240} 
-              height={55}
-              className="h-14 w-auto"
-            />
-            <span className="bg-navy-400 text-white px-4 py-2 rounded-lg font-bold text-xl">
-              🏀 MADNESS
-            </span>
-          </div>
-          <p className="text-navy-200 text-lg mb-4">
-            Own Your Picks • $1,000,000 Perfect Bracket Prize
-          </p>
-          
-          {/* Lock Status */}
-          {settings?.lockDatetime && (
-            <div className={`inline-flex items-center px-5 py-2 rounded-xl font-semibold text-sm ${
-              locked 
-                ? 'bg-rose-500/20 text-rose-200 border border-rose-400/30' 
-                : 'bg-navy-400/20 text-navy-200 border border-navy-400/30'
-            }`}>
-              {locked ? (
-                <span>🔒 Brackets Locked</span>
-              ) : (
-                <span>⏰ Locks in: {getLockCountdown(settings.lockDatetime)}</span>
-              )}
-            </div>
-          )}
+      {/* Hero Banner */}
+      <div className="bg-gradient-to-r from-navy-900 via-navy-800 to-navy-900 relative overflow-hidden">
+        {/* Background pattern */}
+        <div className="absolute inset-0 opacity-10">
+          <div className="absolute inset-0" style={{
+            backgroundImage: `radial-gradient(circle at 2px 2px, rgba(71, 167, 191, 0.5) 1px, transparent 0)`,
+            backgroundSize: '24px 24px',
+          }} />
         </div>
+        
+        <div className="container mx-auto px-4 py-8 relative z-10">
+          <div className="flex flex-col md:flex-row items-center justify-between gap-6">
+            <div className="flex items-center gap-6">
+              <Image 
+                src="/leaseend-logo.webp" 
+                alt="Lease End" 
+                width={200} 
+                height={46}
+                className="h-12 w-auto"
+              />
+              <div className="hidden sm:block w-px h-12 bg-navy-600" />
+              <div className="bg-navy-400 text-white px-5 py-2 rounded-xl font-bold text-xl shadow-lg">
+                🏀 MADNESS 2026
+              </div>
+            </div>
+            
+            <div className="flex items-center gap-6">
+              {settings?.lockDatetime && (
+                <div className={`flex items-center gap-2 px-4 py-2 rounded-xl font-semibold text-sm ${
+                  locked 
+                    ? 'bg-rose-500/20 text-rose-200 border border-rose-400/30' 
+                    : 'bg-navy-700 text-navy-200 border border-navy-600'
+                }`}>
+                  {locked ? '🔒 Brackets Locked' : `⏰ ${getLockCountdown(settings.lockDatetime)}`}
+                </div>
+              )}
+              <div className="text-right text-white">
+                <div className="text-sm text-navy-300">Perfect Bracket Prize</div>
+                <div className="text-2xl font-bold text-navy-400">$1,000,000</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
 
+      <main className="container mx-auto px-4 py-6">
         <BracketView 
           bracketId={bracket.id} 
           isLocked={locked}
