@@ -9,6 +9,7 @@ interface Entrant {
 interface Match {
   id: string
   round: string
+  matchNumber: number
   leftEntrant?: Entrant
   rightEntrant?: Entrant
   winnerEntrant?: Entrant
